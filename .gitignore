@@ -218,3 +218,30 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Піцерія: згенеровані результати ---
+
+# JSON генератора, симулятора та результати аналізу
+output/
+**/output/
+
+# Згенеровані JSON поза папкою output
+Generation_*.json
+Simulator_*_results.json
+
+# Тимчасові файли та журнали
+*.tmp
+*.log
+
+# --- Visual Studio / C++ ---
+.vs/
+[Bb]in/
+[Oo]bj/
+x64/
+x86/
+*.user
+*.suo
+
+# --- Локальні налаштування редакторів ---
+.vscode/*
+!.vscode/extensions.json
