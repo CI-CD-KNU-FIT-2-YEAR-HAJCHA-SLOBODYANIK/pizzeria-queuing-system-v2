@@ -68,7 +68,7 @@ def read_catalog(path):
             cook_time = float(row['time'])
             price = float(row['price'])
 
-            if cook_time <= 0 or price < 0:
+            if cook_time < 0 or price < 0:
                 raise ValueError(f'Некоректні time/price для {item_id} у {path}')
 
             result[item_id] = {'time': cook_time, 'price': price}
