@@ -185,7 +185,7 @@ def generate_orders(count, seed=None,
         orders.append({
             'id': order_id,
             'minute': minute,
-            'recipe_id': rng.choice(recipe_ids),
+            'recipe_id': rng.choice(recipe_ids), # Випадковий рецепт із каталогу.
             'toppings': extra_ids,
         })
 
