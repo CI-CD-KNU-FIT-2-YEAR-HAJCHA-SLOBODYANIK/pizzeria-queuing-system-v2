@@ -179,6 +179,68 @@ def analyze_runs(records, hourly_oven_price,
     ax.legend()
 
     fig.tight_layout()
+
+    # Графік 2. Відмовлені та завершені замовлення.
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+
+    smooth_line(
+        ax, x,
+        [row['count'] - row['completed'] for row in rows],
+        color='#c44e2b',
+        label='Відмовлено',
+        show_points=True,
+        point_size=24,
+        point_alpha=0.95,
+        line_alpha=0.4
+    )
+
+    smooth_line(
+        ax, x,
+        [row['completed'] for row in rows],
+        color='#2b9348',
+        label='Завершено',
+        show_points=True,
+        point_size=24,
+        point_alpha=0.95,
+        line_alpha=0.4
+    )
+
+    ax.set(
+        title='Обробка замовлень',
+        xlabel='Кількість створених замовлень',
+        ylabel='Кількість замовлень'
+    )
+    ax.set_ylim(bottom=0)
+    ax.grid(alpha=0.25)
+    ax.legend()
+
+    fig.tight_layout()
+
+    # Графік 3. Час роботи печі.
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+
+    smooth_line(
+        ax, x,
+        [row['oven_minutes'] / 60 for row in rows],
+        color='#7b2cbf',
+        label='Час роботи',
+        show_points=True,
+        point_size=24,
+        point_alpha=0.95,
+        line_alpha=0.4
+    )
+
+    ax.set(
+        title='Час роботи печі',
+        xlabel='Кількість створених замовлень',
+        ylabel='Години роботи'
+    )
+    ax.set_ylim(bottom=0)
+    ax.grid(alpha=0.25)
+    ax.legend()
+
+    fig.tight_layout()
+
     plt.show(block=False)
 
     return rows
