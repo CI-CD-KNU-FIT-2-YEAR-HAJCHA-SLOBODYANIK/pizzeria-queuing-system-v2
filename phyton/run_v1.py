@@ -1,8 +1,10 @@
+
 """Запуск генерацій і симуляцій з однією піччю."""
 
 import time
 
 from analyzer_v1 import analyze_runs
+from analyzer_timeline_v1 import analyze_timeline_runs
 from generator import ROOT, generate_orders, read_catalog, save_orders
 from simulator_v1 import prepare_orders, save_simulation, simulate
 
@@ -120,7 +122,7 @@ def launch_gui():
         root.update_idletasks()
         print(message)
 
-    def start():
+    def start(timeline=False):
         try:
             settings = {
                 'min_orders': int(fields['min_orders'].get()),
@@ -133,20 +135,35 @@ def launch_gui():
             }
 
             records = run_experiment(settings, progress)
-            rows = analyze_runs(records, settings['oven_price'])
 
-            progress(f'Середній чистий прибуток: '
-                     f'{sum(row["net"] for row in rows) / len(rows):.2f} грн')
+            if timeline:
+                analyze_timeline_runs(records)
+                progress(f'Часовий аналіз виконано для {len(records)} прогонів.')
+            else:
+                rows = analyze_runs(records, settings['oven_price'])
+                
+                progress(f'Середній чистий прибуток: '
+                         f'{sum(row["net"] for row in rows) / len(rows):.2f} грн')
 
         except Exception as exc:
             messagebox.showerror('Помилка', str(exc))
 
+    buttons = ttk.Frame(frame)
+    buttons.pack(anchor='w', pady=(12, 0))
+
     button = ttk.Button(
-        frame,
-        text='Запустити генерацію, симуляцію та аналіз',
+        buttons,
+        text='Графіки за кількістю',
         command=start
     )
-    button.pack(anchor='w', pady=(12, 0))
+    button.pack(side='left', padx=(0, 8))
+
+    timeline_button = ttk.Button(
+        buttons,
+        text='Графіки за часом',
+        command=lambda: start(timeline=True)
+    )
+    timeline_button.pack(side='left')
 
     root.mainloop()
 
