@@ -20,6 +20,48 @@ def revenue_for_results(orders, statuses, recipes, toppings):
     )
 
 
+"""Малює лінію з ковзним середнім і, за потреби, точки."""
+def smooth_line(ax, x, y, color, label, show_points=True,
+                point_size=22, point_alpha=0.8, line_alpha=0.4,
+                line_zorder=2, point_zorder=4):
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+
+    unique_x, indices = np.unique(x, return_inverse=True) # для всіх наявних унікальних Х
+    unique_y = np.bincount(indices, weights=y) / np.bincount(indices) # обчислюємо середнє Y — сума, поділена на кількість
+
+    count = len(unique_x)
+    radius = count // 10  # обчислюємо радіус динамічно
+
+    if radius > 0:
+        smooth_y = savgol_filter(  # згладжуємо бібліотечною функцією ковзного вікна
+            unique_y,
+            window_length=2 * radius + 1,
+            polyorder=1,
+            mode='interp'
+        )
+    else:
+        smooth_y = unique_y
+
+    ax.plot(
+        unique_x, smooth_y,
+        color=color,
+        linewidth=2.2,
+        alpha=line_alpha,
+        label=label,
+        zorder=line_zorder
+    )
+
+    if show_points: # за потреби також малюємо точки
+        ax.scatter(
+            x, y,
+            color=color,
+            s=point_size,
+            alpha=point_alpha,
+            zorder=point_zorder
+        )
+
+
 """Отримує шляхи генерацій і симуляцій, виводить статистику текстом та у вигляді графіків."""
 def analyze_runs(records, hourly_oven_price,
                  recipes_path=ROOT / 'data' / 'recipes.csv',
@@ -85,5 +127,98 @@ def analyze_runs(records, hourly_oven_price,
     mean_net = sum(row['net'] for row in rows) / len(rows)
     print(f'Середній чистий прибуток: {mean_net:.2f} грн')
     print('Виручка розраховується за прийняті та завершені замовлення.')
+
+    # Далі — ГРАФІКИ
+    import matplotlib.pyplot as plt
+
+    x = [row['count'] for row in rows]
+
+    # Графік 1. Виручка, чистий прибуток та можлива виручка.
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+
+    gross = [row['gross'] for row in rows] # виручка
+    net_visible = [max(0, row['net']) for row in rows] # чистий прибуток
+    possible_gross_visible = [row['possible_gross'] for row in rows] # теоретична виручка
+
+    # Жовта лінія та точки розташовані на задньому плані.
+    smooth_line(
+        ax, x, possible_gross_visible,
+        color='#e5ae00',
+        label='Можлива виручка',
+        show_points=True,
+        point_size=24,
+        point_alpha=0.45,
+        line_alpha=0.25,
+        line_zorder=1,
+        point_zorder=1.5
+    )
+
+    # Синя лінія та точки — фактична виручка.
+    smooth_line(
+        ax, x, gross,
+        color='#0756c8',
+        label='Виручка',
+        show_points=True,
+        point_size=24,
+        point_alpha=0.95,
+        line_alpha=0.35
+    )
+
+    # Червона лінія — чистий прибуток, без точок.
+    smooth_line(
+        ax, x, net_visible,
+        color='#d63838',
+        label='Чистий прибуток',
+        show_points=False,
+        line_alpha=0.55
+    )
+
+    ax.set(
+        title='Виручка та чистий прибуток',
+        xlabel='Кількість створених замовлень',
+        ylabel='Гривні (грн)'
+    )
+    ax.set_ylim(bottom=0)
+    ax.grid(alpha=0.25)
+    ax.legend()
+
+    fig.tight_layout()
+
+    # Графік 2. Відмовлені та завершені замовлення.
+    fig, ax = plt.subplots(figsize=(10, 5.5))
+
+    smooth_line(
+        ax, x,
+        [row['count'] - row['completed'] for row in rows],
+        color='#c44e2b',
+        label='Відмовлено',
+        show_points=True,
+        point_size=24,
+        point_alpha=0.95,
+        line_alpha=0.4
+    )
+
+    smooth_line(
+        ax, x,
+        [row['completed'] for row in rows],
+        color='#2b9348',
+        label='Завершено',
+        show_points=True,
+        point_size=24,
+        point_alpha=0.95,
+        line_alpha=0.4
+    )
+
+    ax.set(
+        title='Обробка замовлень',
+        xlabel='Кількість створених замовлень',
+        ylabel='Кількість замовлень'
+    )
+    ax.set_ylim(bottom=0)
+    ax.grid(alpha=0.25)
+    ax.legend()
+
+    fig.tight_layout()
+    plt.show(block=False)
 
     return rows
