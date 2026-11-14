@@ -11,6 +11,10 @@ from generator import CLOSE_HOUR, OPEN_HOUR, ROOT, STEP_MINUTES, load_orders, re
 END_HOUR = 24
 QUEUE_LIMIT = 10
 
+"""Завантажує результати симуляції з JSON-файлу. Це для інших модулів."""
+def load_simulation(path):
+    return json.loads(Path(path).read_text(encoding='utf-8'))
+
 """Перетворює розклад перемикань на погодинний масив кількості печей з 9 до 21."""
 def parse_schedule(source):
     if isinstance(source, str):
@@ -63,7 +67,7 @@ def prepare_orders(orders, recipes, toppings):
             raise ValueError(f'Повторюваний ID замовлення: {order_id}')
 
         # Замовлення поза часовими межами ми не відхиляємо, симуляція його просто не розгляне.
-        
+
         recipe = recipes[str(order['recipe_id'])]
         extra_time = sum(toppings[str(item_id)]['time'] for item_id in order['toppings'])
         duration = recipe['time'] + extra_time
@@ -95,6 +99,7 @@ def simulate(prepared_orders, hourly_schedule):
     queue = deque()
     statuses = []
     status_by_id = {}
+    timeline = []
     pointer = 0
     while pointer < len(prepared_orders) and prepared_orders[pointer][0] < OPEN_HOUR * 60:
         pointer += 1
@@ -159,16 +164,18 @@ def simulate(prepared_orders, hourly_schedule):
                 statuses.append(status)
                 status_by_id[order_id] = status
 
+        # Зберігаємо фактичну довжину черги після обробки поточного кроку.
+        timeline.append([minute, len(queue)])
+
         if minute >= CLOSE_HOUR * 60:
             if not queue and all(order_id is None for order_id in cooking_id):
                 break
 
-    return oven_minutes, statuses
-
+    return oven_minutes, statuses, timeline
 
 
 """Зберігає результати симуляції в один JSON-файл для аналізатора."""
-def save_simulation(oven_minutes, statuses, hourly_schedule, generation_path,
+def save_simulation(oven_minutes, statuses, hourly_schedule, generation_path, timeline,
                     folder=ROOT / 'output' / 'simulated'):
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True) # Створюємо папку, якщо її ще немає
@@ -186,6 +193,7 @@ def save_simulation(oven_minutes, statuses, hourly_schedule, generation_path,
         'rejected': sum(not order['accepted'] for order in statuses),
         'completed': sum(order['completion_minute'] is not None for order in statuses),
         'orders': statuses,
+        'timeline': timeline,
     }
 
     path.write_text(json.dumps(result, indent=2), encoding='utf-8')
@@ -204,6 +212,8 @@ if __name__ == '__main__':
     prepared = prepare_orders(load_orders(args.orders), recipes, toppings)
     hourly_schedule = parse_schedule(args.schedule)
 
-    oven_minutes, statuses = simulate(prepared, hourly_schedule)
+    oven_minutes, statuses, timeline = simulate(prepared, hourly_schedule)
 
-    path = save_simulation(oven_minutes, statuses, hourly_schedule, args.orders)
+    path = save_simulation(
+        oven_minutes, statuses, hourly_schedule, args.orders, timeline
+    )
