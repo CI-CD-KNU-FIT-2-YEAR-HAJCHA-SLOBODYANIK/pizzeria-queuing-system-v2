@@ -125,13 +125,15 @@ def generate_time(value, anchors=HOUR_WEIGHTS):
 
     # Перебираємо години від початку до кінця, віднімаючи їхні ваги,
     # доки позиція не потрапить у відповідний часовий проміжок.
-    for hour, w in zip(range(OPEN_HOUR, CLOSE_HOUR), weights):
+    for i, (hour, w) in enumerate(zip(range(OPEN_HOUR, CLOSE_HOUR), weights)):
         if position < w:
-            slot = min(
-                60 // STEP_MINUTES - 1,
-                int(position / w * (60 // STEP_MINUTES))
-            )
-            return hour * 60 + slot * STEP_MINUTES
+            left = weights[max(0, i - 1)]
+            right = weights[min(i + 1, len(weights) - 1)]
+            k = (right - left) / (left + right + 2 * w)
+            u = position / w
+            t = 2 * u / (1 - k + ((1 - k)**2 + 4 * k * u)**0.5)
+
+            return hour * 60 + min(60 // STEP_MINUTES - 1, int(t * (60 // STEP_MINUTES))) * STEP_MINUTES
 
         position -= w
 
