@@ -1,5 +1,4 @@
-
-"""Аналіз результатів симуляції (з однією піччю), побудова графіків."""
+"""Аналіз результатів симуляції (з однією піччю), побудова графіків відосно N_ЗАКАЗІВ."""
 
 import numpy as np
 from scipy.signal import savgol_filter
@@ -108,7 +107,7 @@ def analyze_runs(records, hourly_oven_price,
             'oven_minutes': oven_minutes,
             'oven_cost': oven_cost,
             'net': gross - oven_cost,
-        }) # а навіщо ми цю штуку перезаписуємо? але нехай.
+        })
 
     rows.sort(key=lambda row: row['count'])
 
