@@ -130,7 +130,8 @@ def generate_time(value, anchors=HOUR_WEIGHTS):
             left = weights[max(0, i - 1)]
             right = weights[min(i + 1, len(weights) - 1)]
             k = (right - left) / (left + right + 2 * w)
-            u = position / w
+            u = position / w 
+            # Обчислюємо t через обернену функцію розподілу ймовірностей.
             t = 2 * u / (1 - k + ((1 - k)**2 + 4 * k * u)**0.5)
 
             return hour * 60 + min(60 // STEP_MINUTES - 1, int(t * (60 // STEP_MINUTES))) * STEP_MINUTES
